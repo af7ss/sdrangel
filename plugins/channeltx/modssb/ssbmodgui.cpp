@@ -599,6 +599,7 @@ void SSBModGUI::applyBandwidths(int spanLog2, bool force)
         ui->glSpectrum->setSampleRate(2*m_spectrumRate);
         spectrumSettings.m_ssb = false;
         ui->glSpectrum->setLsbDisplay(false);
+        ui->glSpectrum->setSsbSpectrum(false);
     }
     else
     {
@@ -609,10 +610,11 @@ void SSBModGUI::applyBandwidths(int spanLog2, bool force)
         ui->scalePlus->setText("+");
         ui->lsbLabel->setText("LSB");
         ui->usbLabel->setText("USB");
-        ui->glSpectrum->setCenterFrequency(m_spectrumRate/2);
-        ui->glSpectrum->setSampleRate(m_spectrumRate);
+        ui->glSpectrum->setCenterFrequency(0);
+        ui->glSpectrum->setSampleRate(2*m_spectrumRate);
         spectrumSettings.m_ssb = true;
         ui->glSpectrum->setLsbDisplay(bw < 0);
+        ui->glSpectrum->setSsbSpectrum(true);
     }
 
     SpectrumVis::MsgConfigureSpectrumVis *msg = SpectrumVis::MsgConfigureSpectrumVis::create(spectrumSettings, false);

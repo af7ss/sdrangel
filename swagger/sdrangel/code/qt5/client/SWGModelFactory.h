@@ -51,6 +51,8 @@
 #include "SWGAirspyHFSettings.h"
 #include "SWGAirspyReport.h"
 #include "SWGAirspySettings.h"
+#include "SWGAndroidSDRDriverInputReport.h"
+#include "SWGAndroidSDRDriverInputSettings.h"
 #include "SWGAntennaToolsSettings.h"
 #include "SWGArgInfo.h"
 #include "SWGArgValue.h"
@@ -222,6 +224,10 @@
 #include "SWGPERTesterActions_aos.h"
 #include "SWGPERTesterReport.h"
 #include "SWGPERTesterSettings.h"
+#include "SWGPSK31ModActions.h"
+#include "SWGPSK31ModActions_payload.h"
+#include "SWGPSK31ModReport.h"
+#include "SWGPSK31ModSettings.h"
 #include "SWGPacketDemodReport.h"
 #include "SWGPacketDemodSettings.h"
 #include "SWGPacketModActions.h"
@@ -251,6 +257,10 @@
 #include "SWGRDSReport_altFrequencies.h"
 #include "SWGRTTYDemodReport.h"
 #include "SWGRTTYDemodSettings.h"
+#include "SWGRTTYModActions.h"
+#include "SWGRTTYModActions_payload.h"
+#include "SWGRTTYModReport.h"
+#include "SWGRTTYModSettings.h"
 #include "SWGRadioAstronomyActions.h"
 #include "SWGRadioAstronomyReport.h"
 #include "SWGRadioAstronomySettings.h"
@@ -542,6 +552,16 @@ namespace SWGSDRangel {
     }
     if(QString("SWGAirspySettings").compare(type) == 0) {
       SWGAirspySettings *obj = new SWGAirspySettings();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGAndroidSDRDriverInputReport").compare(type) == 0) {
+      SWGAndroidSDRDriverInputReport *obj = new SWGAndroidSDRDriverInputReport();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGAndroidSDRDriverInputSettings").compare(type) == 0) {
+      SWGAndroidSDRDriverInputSettings *obj = new SWGAndroidSDRDriverInputSettings();
       obj->init();
       return obj;
     }
@@ -1400,6 +1420,26 @@ namespace SWGSDRangel {
       obj->init();
       return obj;
     }
+    if(QString("SWGPSK31ModActions").compare(type) == 0) {
+      SWGPSK31ModActions *obj = new SWGPSK31ModActions();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGPSK31ModActions_payload").compare(type) == 0) {
+      SWGPSK31ModActions_payload *obj = new SWGPSK31ModActions_payload();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGPSK31ModReport").compare(type) == 0) {
+      SWGPSK31ModReport *obj = new SWGPSK31ModReport();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGPSK31ModSettings").compare(type) == 0) {
+      SWGPSK31ModSettings *obj = new SWGPSK31ModSettings();
+      obj->init();
+      return obj;
+    }
     if(QString("SWGPacketDemodReport").compare(type) == 0) {
       SWGPacketDemodReport *obj = new SWGPacketDemodReport();
       obj->init();
@@ -1542,6 +1582,26 @@ namespace SWGSDRangel {
     }
     if(QString("SWGRTTYDemodSettings").compare(type) == 0) {
       SWGRTTYDemodSettings *obj = new SWGRTTYDemodSettings();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGRTTYModActions").compare(type) == 0) {
+      SWGRTTYModActions *obj = new SWGRTTYModActions();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGRTTYModActions_payload").compare(type) == 0) {
+      SWGRTTYModActions_payload *obj = new SWGRTTYModActions_payload();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGRTTYModReport").compare(type) == 0) {
+      SWGRTTYModReport *obj = new SWGRTTYModReport();
+      obj->init();
+      return obj;
+    }
+    if(QString("SWGRTTYModSettings").compare(type) == 0) {
+      SWGRTTYModSettings *obj = new SWGRTTYModSettings();
       obj->init();
       return obj;
     }

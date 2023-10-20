@@ -34,6 +34,7 @@
 #include "settings/mainsettings.h"
 #include "util/messagequeue.h"
 #include "util/db.h"
+#include "util/profiler.h"
 
 #include <QDebug>
 
@@ -958,6 +959,8 @@ void GLSpectrumView::clearSpectrumHistogram()
 
 void GLSpectrumView::paintGL()
 {
+    PROFILER_START()
+
     if (!m_mutex.tryLock(2)) {
         return;
     }
@@ -975,7 +978,7 @@ void GLSpectrumView::paintGL()
     }
 
     QOpenGLFunctions *glFunctions = QOpenGLContext::currentContext()->functions();
-    glFunctions->glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glFunctions->glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glFunctions->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     QMatrix4x4 spectrogramGridMatrix;
@@ -1808,6 +1811,29 @@ void GLSpectrumView::paintGL()
     }
 
     m_mutex.unlock();
+
+#ifdef ENABLE_PROFILER
+    if (m_profileName.isEmpty())
+    {
+        // Try to use the window name for the profile name
+        QString windowTitle;
+        for (QWidget *widget = parentWidget(); widget != nullptr; widget = widget->parentWidget())
+        {
+            windowTitle = widget->windowTitle();
+            if (!windowTitle.isEmpty()) {
+                break;
+            }
+        }
+        // Add this address so we get per-spectrum profile data
+        if (windowTitle.isEmpty()) {
+            m_profileName = QString("Spectrum @%1").arg((quint64)this, 0, 16);
+        } else {
+            m_profileName = QString("%1 @%2").arg(windowTitle).arg((quint64)this, 0, 16);
+        }
+    }
+#endif
+
+    PROFILER_STOP(m_profileName)
 } // paintGL
 
 // Hightlight power band for SFDR
@@ -2706,7 +2732,7 @@ void GLSpectrumView::applyChanges()
 
         if (m_sampleRate > 0)
         {
-            float timeScaleDiv = ((float)m_sampleRate / (float)m_timingRate) * (m_ssbSpectrum ? 2 : 1);
+            float timeScaleDiv = ((float)m_sampleRate / (float)m_timingRate);
             float halfFFTSize = m_fftSize / 2;
 
             if (halfFFTSize > m_fftOverlap) {
@@ -2800,7 +2826,7 @@ void GLSpectrumView::applyChanges()
 
         if (m_sampleRate > 0)
         {
-            float timeScaleDiv = ((float)m_sampleRate / (float)m_timingRate) * (m_ssbSpectrum ? 2 : 1);
+            float timeScaleDiv = ((float)m_sampleRate / (float)m_timingRate);
             float halfFFTSize = m_fftSize / 2;
 
             if (halfFFTSize > m_fftOverlap) {
@@ -4329,7 +4355,10 @@ void GLSpectrumView::zoom(const QPointF& p, int y)
         float zoomFreq = m_frequencyScale.getRangeMin() + pwx*m_frequencyScale.getRange();
 
         // Calculate current centre frequency
-        float currentCF = (m_frequencyZoomFactor == 1) ? m_centerFrequency : ((m_frequencyZoomPos - 0.5) * m_sampleRate + m_centerFrequency);
+        int adjSampleRate = m_ssbSpectrum ? m_sampleRate/2 : m_sampleRate;
+        qint64 adjCenterFrequency = m_centerFrequency + (m_ssbSpectrum ? m_sampleRate/4 : 0);
+        float currentCF = (m_frequencyZoomFactor == 1) ?
+            adjCenterFrequency : (m_frequencyZoomPos - 0.5) * adjSampleRate + adjCenterFrequency;
 
         // Calculate difference from frequency under cursor to centre frequency
         float freqDiff = (currentCF - zoomFreq);
@@ -4360,7 +4389,7 @@ void GLSpectrumView::zoom(const QPointF& p, int y)
         float zoomedCF = zoomFreq + zoomedFreqDiff;
 
         // Calculate zoom position which will set the desired center frequency
-        float zoomPos = (zoomedCF - m_centerFrequency) / m_sampleRate + 0.5;
+        float zoomPos = (zoomedCF - adjCenterFrequency) / adjSampleRate + 0.5;
         zoomPos = std::max(0.0f, zoomPos);
         zoomPos = std::min(1.0f, zoomPos);
 

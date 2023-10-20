@@ -112,9 +112,9 @@ const QString ADSBDemodGUI::m_emergencyStatus[] = {
 };
 
 const QString ADSBDemodGUI::m_flightStatuses[] = {
-    QStringLiteral("Airbourne"),
+    QStringLiteral("Airborne"),
     QStringLiteral("On-ground"),
-    QStringLiteral("Alert, airboune"),
+    QStringLiteral("Alert, airborne"),
     QStringLiteral("Alert, on-ground"),
     QStringLiteral("Alert, SPI"),
     QStringLiteral("SPI"),
@@ -1107,7 +1107,7 @@ void ADSBDemodGUI::handleADSB(
         else
         {
             // Ignore if not from a known aircraft, as its likely not to be a valid packet
-            //qDebug() << "Skiping Mode-S from unknown aircraft - DF " << df << " ICAO " << Qt::hex << icao;
+            //qDebug() << "Skipping Mode-S from unknown aircraft - DF " << df << " ICAO " << Qt::hex << icao;
             return;
         }
     }
@@ -3439,7 +3439,7 @@ void ADSBDemodGUI::adsbData_customContextMenuRequested(QPoint pos)
         });
         tableContextMenu->addAction(planeSpottersAction);
 
-        QAction* adsbExchangeAction = new QAction("View aircraft on adsbexchange.net...", tableContextMenu);
+        QAction* adsbExchangeAction = new QAction("View aircraft on adsbexchange.com...", tableContextMenu);
         connect(adsbExchangeAction, &QAction::triggered, this, [icaoHex]()->void {
             QDesktopServices::openUrl(QUrl(QString("https://globe.adsbexchange.com/?icao=%1").arg(icaoHex)));
         });
@@ -3453,7 +3453,7 @@ void ADSBDemodGUI::adsbData_customContextMenuRequested(QPoint pos)
 
         if (!aircraft->m_callsign.isEmpty())
         {
-            QAction* flightRadarAction = new QAction("View flight on flightradar24.net...", tableContextMenu);
+            QAction* flightRadarAction = new QAction("View flight on flightradar24.com...", tableContextMenu);
             connect(flightRadarAction, &QAction::triggered, this, [aircraft]()->void {
                 QDesktopServices::openUrl(QUrl(QString("https://www.flightradar24.com/%1").arg(aircraft->m_callsign)));
             });

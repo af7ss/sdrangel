@@ -36,7 +36,7 @@ if(APPLE AND BUNDLE AND BUILD_GUI)
   set(CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/cmake/cpack/sdrangel_icon.icns")
   set(CPACK_BUNDLE_PLIST "${CMAKE_BINARY_DIR}/Info.plist")
   set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/cmake/cpack/sdrangel_icon.icns")
-  set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION}_${CPACK_MACOS_PACKAGE_ARCHITECTURE}_${CMAKE_SYSTEM_PROCESSOR}")
+  set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION}_${CPACK_MACOS_PACKAGE_ARCHITECTURE}_${CMAKE_SYSTEM_PROCESSOR}" CACHE INTERNAL "")
   set(CPACK_PRE_BUILD_SCRIPTS "${PROJECT_BINARY_DIR}/deploy_mac.cmake")
 
   # copy SoapySDR Modules
@@ -236,6 +236,19 @@ elseif(WIN32 OR MINGW)
     )
   endforeach(libsigmf_dll)
 
+  if(${VKFFT_BACKEND} EQUAL 1)
+    find_package(CUDA)
+    if(CUDA_FOUND)
+      file(GLOB CUDA_DLLS "${CUDA_TOOLKIT_ROOT_DIR}/bin/nvrtc*${CMAKE_SHARED_LIBRARY_SUFFIX}")
+      foreach(cuda_dll ${CUDA_DLLS})
+        get_filename_component(cuda_dll_name "${cuda_dll}"  NAME)
+        add_custom_target(copy_cuda_${cuda_dll_name} ALL
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${cuda_dll}" "${SDRANGEL_BINARY_BIN_DIR}/"
+        )
+      endforeach(cuda_dll)
+    endif()
+  endif()
+
   # TODO we need a way to fixup_bundle() on the build bin/ directory without call install
   if(BUILD_GUI)
     install(CODE "
@@ -295,7 +308,11 @@ elseif(WIN32 OR MINGW)
     # libsigmf
     install(DIRECTORY "${LIBSIGMF_DLL_DIR}/" DESTINATION "${INSTALL_LIB_DIR}"
       FILES_MATCHING PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
+    # CUDA runtime
+    if((${VKFFT_BACKEND} EQUAL 1) AND CUDA_FOUND)
+      install(DIRECTORY "${CUDA_TOOLKIT_ROOT_DIR}/bin/" DESTINATION "${INSTALL_LIB_DIR}"
+        FILES_MATCHING PATTERN "nvrtc*${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    endif()
 
     install(CODE "
       # remove *.lib files
@@ -314,7 +331,7 @@ elseif(WIN32 OR MINGW)
       endforeach()
     " COMPONENT Runtime)
 
-    list(APPEND CPACK_GENERATOR "ZIP;NSIS")
+    list(APPEND CPACK_GENERATOR "NSIS")
     set(CPACK_MONOLITHIC_INSTALL ON)
     set(CPACK_NSIS_HELP_LINK ${CPACK_PACKAGE_CONTACT})
     set(CPACK_NSIS_URL_INFO_ABOUT ${CPACK_PACKAGE_CONTACT})

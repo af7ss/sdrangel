@@ -65,6 +65,7 @@
 #include "gui/deviceuserargsdialog.h"
 #include "gui/sdrangelsplash.h"
 #include "gui/mypositiondialog.h"
+#include "gui/fftdialog.h"
 #include "gui/fftwisdomdialog.h"
 #include "gui/workspace.h"
 #include "gui/featurepresetsdialog.h"
@@ -73,6 +74,7 @@
 #include "gui/configurationsdialog.h"
 #include "gui/dialogpositioner.h"
 #include "gui/welcomedialog.h"
+#include "gui/profiledialog.h"
 #include "dsp/dspengine.h"
 #include "dsp/spectrumvis.h"
 #include "dsp/dspcommands.h"
@@ -90,6 +92,7 @@
 #include "webapi/webapiserver.h"
 #include "webapi/webapiadapter.h"
 #include "commands/command.h"
+#include "settings/serializableinterface.h"
 #ifdef ANDROID
 #include "util/android.h"
 #endif
@@ -121,6 +124,7 @@ MainWindow::MainWindow(qtwebapp::LoggerWithFile *logger, const MainParser& parse
     m_dateTimeWidget(nullptr),
     m_showSystemWidget(nullptr),
     m_commandKeyReceiver(nullptr),
+    m_profileDialog(nullptr),
     m_fftWisdomProcess(nullptr)
 {
 #ifdef ANDROID
@@ -190,7 +194,11 @@ MainWindow::MainWindow(qtwebapp::LoggerWithFile *logger, const MainParser& parse
 	connect(&m_statusTimer, SIGNAL(timeout()), this, SLOT(updateStatus()));
 	m_statusTimer.start(1000);
 
-    splash->showStatusMessage("allocate FFTs...", Qt::white);
+    splash->showStatusMessage("load settings...", Qt::white);
+    qDebug() << "MainWindow::MainWindow: load settings...";
+
+    loadSettings();
+
     splash->showStatusMessage("allocate FFTs...", Qt::white);
 
     if (parser.getFFTWFWisdomFileName().length() != 0)
@@ -212,11 +220,6 @@ MainWindow::MainWindow(qtwebapp::LoggerWithFile *logger, const MainParser& parse
     }
 
     m_dspEngine->preAllocateFFTs();
-
-    splash->showStatusMessage("load settings...", Qt::white);
-    qDebug() << "MainWindow::MainWindow: load settings...";
-
-    loadSettings();
 
     splash->showStatusMessage("load plugins...", Qt::white);
     qDebug() << "MainWindow::MainWindow: load plugins...";
@@ -322,6 +325,7 @@ MainWindow::~MainWindow()
     removeAllFeatureSets();
 
 	delete m_commandKeyReceiver;
+    delete m_profileDialog;
 
     for (const auto& workspace : m_workspaces) {
         delete workspace;
@@ -400,6 +404,7 @@ void MainWindow::sampleSourceAdd(Workspace *deviceWorkspace, Workspace *spectrum
 
     deviceWorkspace->addToMdiArea(m_deviceUIs.back()->m_deviceGUI);
     spectrumWorkspace->addToMdiArea(m_deviceUIs.back()->m_mainSpectrumGUI);
+    loadDefaultPreset(deviceAPI->getSamplingDeviceId(), m_deviceUIs.back());
     emit m_mainCore->deviceSetAdded(deviceSetIndex, deviceAPI);
 
 #ifdef ANDROID
@@ -635,6 +640,7 @@ void MainWindow::sampleSinkAdd(Workspace *deviceWorkspace, Workspace *spectrumWo
 
     deviceWorkspace->addToMdiArea(m_deviceUIs.back()->m_deviceGUI);
     spectrumWorkspace->addToMdiArea(m_deviceUIs.back()->m_mainSpectrumGUI);
+    loadDefaultPreset(deviceAPI->getSamplingDeviceId(), m_deviceUIs.back());
     emit m_mainCore->deviceSetAdded(deviceSetIndex, deviceAPI);
 }
 
@@ -866,6 +872,7 @@ void MainWindow::sampleMIMOAdd(Workspace *deviceWorkspace, Workspace *spectrumWo
 
     deviceWorkspace->addToMdiArea(m_deviceUIs.back()->m_deviceGUI);
     spectrumWorkspace->addToMdiArea(m_deviceUIs.back()->m_mainSpectrumGUI);
+    loadDefaultPreset(deviceAPI->getSamplingDeviceId(), m_deviceUIs.back());
     emit m_mainCore->deviceSetAdded(deviceSetIndex, deviceAPI);
 }
 
@@ -1657,6 +1664,11 @@ void MainWindow::createMenuBar(QToolButton *button)
     keepscreenonAction->setCheckable(true);
     QObject::connect(keepscreenonAction, &QAction::triggered, this, &MainWindow::on_action_View_KeepScreenOn_toggled);
 #endif
+#ifdef ENABLE_PROFILER
+    QAction *profileAction = viewMenu->addAction("&Profile data...");
+    profileAction->setToolTip("View profile data");
+    QObject::connect(profileAction, &QAction::triggered, this, &MainWindow::on_action_Profile_triggered);
+#endif
 
     QAction *newWorkspaceAction = workspacesMenu->addAction("&New");
     newWorkspaceAction->setToolTip("Add a new workspace");
@@ -1684,8 +1696,11 @@ void MainWindow::createMenuBar(QToolButton *button)
     myPositionAction->setToolTip("Set station position");
     QObject::connect(myPositionAction, &QAction::triggered, this, &MainWindow::on_action_My_Position_triggered);
     QAction *fftAction = preferencesMenu->addAction("&FFT...");
-    fftAction->setToolTip("Set FFT cache");
+    fftAction->setToolTip("Set FFT preferences");
     QObject::connect(fftAction, &QAction::triggered, this, &MainWindow::on_action_FFT_triggered);
+    QAction *fftWisdomAction = preferencesMenu->addAction("&FFTW Wisdom...");
+    fftWisdomAction->setToolTip("Set FFTW cache");
+    QObject::connect(fftWisdomAction, &QAction::triggered, this, &MainWindow::on_action_FFTWisdom_triggered);
     QMenu *devicesMenu = preferencesMenu->addMenu("&Devices");
     QAction *userArgumentsAction = devicesMenu->addAction("&User arguments...");
     userArgumentsAction->setToolTip("Device custom user arguments");
@@ -1742,6 +1757,10 @@ void MainWindow::closeEvent(QCloseEvent *closeEvent)
 
     while (m_deviceUIs.size() > 0) {
         removeLastDeviceSet();
+    }
+
+    if (m_profileDialog) {
+        m_profileDialog->close();
     }
 
     closeEvent->accept();
@@ -2223,6 +2242,17 @@ void MainWindow::on_action_View_Fullscreen_toggled(bool checked)
 	}
 }
 
+void MainWindow::on_action_Profile_triggered()
+{
+    if (m_profileDialog == nullptr)
+    {
+        m_profileDialog = new ProfileDialog();
+        new DialogPositioner(m_profileDialog, true);
+    }
+    m_profileDialog->show();
+    m_profileDialog->raise();
+}
+
 void MainWindow::commandKeysConnect(QObject *object, const char *slot)
 {
     setFocus();
@@ -2345,6 +2375,14 @@ void MainWindow::on_action_commands_triggered()
 void MainWindow::on_action_FFT_triggered()
 {
     qDebug("MainWindow::on_action_FFT_triggered");
+    FFTDialog fftDialog(m_mainCore->m_settings, this);
+    new DialogPositioner(&fftDialog, true);
+    fftDialog.exec();
+}
+
+void MainWindow::on_action_FFTWisdom_triggered()
+{
+    qDebug("MainWindow::on_action_FFTWisdom_triggered");
 
     if (m_fftWisdomProcess)
     {
@@ -2743,13 +2781,13 @@ void MainWindow::channelAddClicked(Workspace *workspace, int deviceSetIndex, int
     {
         DeviceUISet *deviceUI = m_deviceUIs[deviceSetIndex];
         ChannelGUI *gui = nullptr;
+        ChannelAPI *channelAPI;
         DeviceAPI *deviceAPI = deviceUI->m_deviceAPI;
 
         if (deviceUI->m_deviceSourceEngine) // source device => Rx channels
         {
             PluginAPI::ChannelRegistrations *channelRegistrations = m_pluginManager->getRxChannelRegistrations(); // Available channel plugins
             PluginInterface *pluginInterface = (*channelRegistrations)[channelPluginIndex].m_plugin;
-            ChannelAPI *channelAPI;
             BasebandSampleSink *rxChannel;
             pluginInterface->createRxChannel(deviceUI->m_deviceAPI, &rxChannel, &channelAPI);
             gui = pluginInterface->createRxChannelGUI(deviceUI, rxChannel);
@@ -2762,7 +2800,6 @@ void MainWindow::channelAddClicked(Workspace *workspace, int deviceSetIndex, int
         {
             PluginAPI::ChannelRegistrations *channelRegistrations = m_pluginManager->getTxChannelRegistrations(); // Available channel plugins
             PluginInterface *pluginInterface = (*channelRegistrations)[channelPluginIndex].m_plugin;
-            ChannelAPI *channelAPI;
             BasebandSampleSource *txChannel;
             pluginInterface->createTxChannel(deviceUI->m_deviceAPI, &txChannel, &channelAPI);
             gui = pluginInterface->createTxChannelGUI(deviceUI, txChannel);
@@ -2783,7 +2820,6 @@ void MainWindow::channelAddClicked(Workspace *workspace, int deviceSetIndex, int
             {
                 PluginAPI::ChannelRegistrations *channelRegistrations = m_pluginManager->getMIMOChannelRegistrations(); // Available channel plugins
                 PluginInterface *pluginInterface = (*channelRegistrations)[channelPluginIndex].m_plugin;
-                ChannelAPI *channelAPI;
                 MIMOChannel *mimoChannel;
                 pluginInterface->createMIMOChannel(deviceUI->m_deviceAPI, &mimoChannel, &channelAPI);
                 gui = pluginInterface->createMIMOChannelGUI(deviceUI, mimoChannel);
@@ -2795,7 +2831,6 @@ void MainWindow::channelAddClicked(Workspace *workspace, int deviceSetIndex, int
             {
                 PluginAPI::ChannelRegistrations *channelRegistrations = m_pluginManager->getRxChannelRegistrations(); // Available channel plugins
                 PluginInterface *pluginInterface = (*channelRegistrations)[channelPluginIndex - nbMIMOChannels].m_plugin;
-                ChannelAPI *channelAPI;
                 BasebandSampleSink *rxChannel;
                 pluginInterface->createRxChannel(deviceUI->m_deviceAPI, &rxChannel, &channelAPI);
                 gui = pluginInterface->createRxChannelGUI(deviceUI, rxChannel);
@@ -2807,7 +2842,6 @@ void MainWindow::channelAddClicked(Workspace *workspace, int deviceSetIndex, int
             {
                 PluginAPI::ChannelRegistrations *channelRegistrations = m_pluginManager->getTxChannelRegistrations(); // Available channel plugins
                 PluginInterface *pluginInterface = (*channelRegistrations)[channelPluginIndex - nbMIMOChannels - nbRxChannels].m_plugin;
-                ChannelAPI *channelAPI;
                 BasebandSampleSource *txChannel;
                 pluginInterface->createTxChannel(deviceUI->m_deviceAPI, &txChannel, &channelAPI);
                 gui = pluginInterface->createTxChannelGUI(deviceUI, txChannel);
@@ -2847,6 +2881,7 @@ void MainWindow::channelAddClicked(Workspace *workspace, int deviceSetIndex, int
                 qPrintable(gui->getTitle()), workspace->getIndex());
             workspace->addToMdiArea((QMdiSubWindow*) gui);
             //gui->restoreGeometry(gui->getGeometryBytes());
+            loadDefaultPreset(channelAPI->getURI(), gui);
         }
     }
 }
@@ -2867,6 +2902,7 @@ void MainWindow::featureAddClicked(Workspace *workspace, int featureIndex)
     gui->setWorkspaceIndex(workspace->getIndex());
     gui->setDisplayedame(pluginInterface->getPluginDescriptor().displayedName);
     workspace->addToMdiArea((QMdiSubWindow*) gui);
+    loadDefaultPreset(feature->getURI(), gui);
 
     QObject::connect(
         gui,
@@ -3050,6 +3086,23 @@ void MainWindow::deleteFeature(int featureSetIndex, int featureIndex)
     {
         FeatureUISet *featureUISet = m_featureUIs[featureSetIndex];
         featureUISet->deleteFeature(featureIndex);
+    }
+}
+
+// Look for and load a preset named Defaults/Default for the given plugin id
+void MainWindow::loadDefaultPreset(const QString& pluginId, SerializableInterface *serializableInterface)
+{
+    QList<PluginPreset*>* presets = m_mainCore->m_settings.getPluginPresets();
+
+    for (const auto preset : *presets)
+    {
+        if (preset->getGroup() == "Defaults"
+            && preset->getDescription() == "Default"
+            && preset->getPluginIdURI() == pluginId)
+        {
+            qDebug() << "MainWindow::loadDefaultPreset: Loading " << preset->getGroup() << preset->getDescription() << "for" << pluginId;
+            serializableInterface->deserialize(preset->getConfig());
+        }
     }
 }
 

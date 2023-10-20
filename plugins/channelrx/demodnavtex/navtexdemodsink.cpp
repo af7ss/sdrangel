@@ -329,6 +329,8 @@ void NavtexDemodSink::receiveBit(bool bit)
                 m_gotSOP = true;
                 m_bitCount = 0;
                 m_sitorBDecoder.init();
+                m_rssiMagSqSum = 0.0;
+                m_rssiMagSqCount = 0;
             }
             else
             {
@@ -409,7 +411,7 @@ void NavtexDemodSink::receiveBit(bool bit)
                 }
                 if (m_consecutiveErrors >= 5)
                 {
-                    //qDebug() << "Too many consequtive errors";
+                    //qDebug() << "Too many consecutive errors";
                     init();
                 }
             }

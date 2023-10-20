@@ -22,16 +22,23 @@
 #include <QStyleFactory>
 #include <QFontDatabase>
 #include <QSysInfo>
+#include <QSettings>
 #ifdef __APPLE__
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QGLFormat>
+#endif
 #include <QSurfaceFormat>
 #endif
 #ifdef ANDROID
 #include "util/android.h"
 #endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+#include <QQuickWindow>
+#endif
 
 #include "loggerwithfile.h"
 #include "mainwindow.h"
+#include "remotetcpsinkstarter.h"
 #include "dsp/dsptypes.h"
 
 static int runQtApplication(int argc, char* argv[], qtwebapp::LoggerWithFile *logger)
@@ -52,9 +59,26 @@ static int runQtApplication(int argc, char* argv[], qtwebapp::LoggerWithFile *lo
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)) && (QT_VERSION <= QT_VERSION_CHECK(6, 0, 0))
     QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
 #endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 4, 0))
+    // Only use OpenGL, to easily combine QOpenGLWidget, QQuickWidget and QWebEngine
+    // in a single window
+    // See https://www.qt.io/blog/qt-quick-and-widgets-qt-6.4-edition
+    // This prevents Direct3D/Vulcan being used on Windows/Mac though for QQuickWidget
+    // and QWebEngine, so possibly should be reviewed in the future
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+#endif
 #ifndef ANDROID
      QApplication::setAttribute(Qt::AA_DontUseNativeDialogs); // Don't use on Android, otherwise we can't access files on internal storage
 #endif
+
+    // Set UI scale factor for High DPI displays
+    QSettings settings;
+    QString uiScaleFactor = "graphics.ui_scale_factor";
+    if (settings.contains(uiScaleFactor))
+    {
+        QString scaleFactor = settings.value(uiScaleFactor).toString();
+        qputenv("QT_SCALE_FACTOR", scaleFactor.toLatin1());
+    }
 
 	QApplication a(argc, argv);
 
@@ -156,7 +180,27 @@ static int runQtApplication(int argc, char* argv[], qtwebapp::LoggerWithFile *lo
             applicationPid);
 #endif
 
+    if (parser.getListDevices())
+    {
+        // Disable log on console, so we can more easily see device list
+        logger->setConsoleMinMessageLevel(QtFatalMsg);
+        // Don't pass logger to MainWindow, otherwise it can reenable log output
+        logger = nullptr;
+    }
+
 	MainWindow w(logger, parser);
+
+    if (parser.getListDevices())
+    {
+        // List available physical devices and exit
+        RemoteTCPSinkStarter::listAvailableDevices();
+        exit (EXIT_SUCCESS);
+    }
+
+    if (parser.getRemoteTCPSink()) {
+        RemoteTCPSinkStarter::start(parser);
+    }
+
 	w.show();
 
 	return a.exec();
@@ -170,14 +214,22 @@ int main(int argc, char* argv[])
     // will not work. Because of this, we have two versions of the shaders:
     // OpenGL 2 versions for compatiblity with older drivers and OpenGL 3.3
     // versions for newer drivers
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QGLFormat fmt;
     fmt.setVersion(3, 3);
     fmt.setProfile(QGLFormat::CoreProfile);
     QGLFormat::setDefaultFormat(fmt);
+#endif
     QSurfaceFormat sfc;
     sfc.setVersion(3, 3);
     sfc.setProfile(QSurfaceFormat::CoreProfile);
     QSurfaceFormat::setDefaultFormat(sfc);
+
+    // Request authorization for access to camera and microphone (mac/auth.mm)
+    extern int authCameraAndMic();
+    if (authCameraAndMic() < 0) {
+        qWarning("Failed to authorize access to camera and microphone. Enable access in System Settings > Privacy & Security");
+    }
 #endif
 
 #ifdef ANDROID

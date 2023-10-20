@@ -4609,6 +4609,11 @@ bool WebAPIRequestMapper::getChannelSettings(
             channelSettings->setPagerDemodSettings(new SWGSDRangel::SWGPagerDemodSettings());
             channelSettings->getPagerDemodSettings()->fromJsonObject(settingsJsonObject);
         }
+        else if (channelSettingsKey == "PSK31ModSettings")
+        {
+            channelSettings->setPsk31ModSettings(new SWGSDRangel::SWGPSK31ModSettings());
+            channelSettings->getPsk31ModSettings()->fromJsonObject(settingsJsonObject);
+        }
         else if (channelSettingsKey == "RadioAstronomySettings")
         {
             channelSettings->setRadioAstronomySettings(new SWGSDRangel::SWGRadioAstronomySettings());
@@ -4643,6 +4648,11 @@ bool WebAPIRequestMapper::getChannelSettings(
         {
             channelSettings->setRttyDemodSettings(new SWGSDRangel::SWGRTTYDemodSettings());
             channelSettings->getRttyDemodSettings()->fromJsonObject(settingsJsonObject);
+        }
+        else if (channelSettingsKey == "RTTYModSettings")
+        {
+            channelSettings->setRttyModSettings(new SWGSDRangel::SWGRTTYModSettings());
+            channelSettings->getRttyModSettings()->fromJsonObject(settingsJsonObject);
         }
         else if (channelSettingsKey == "SigMFFileSinkSettings")
         {
@@ -4751,6 +4761,16 @@ bool WebAPIRequestMapper::getChannelActions(
             channelActions->setPacketModActions(new SWGSDRangel::SWGPacketModActions());
             channelActions->getPacketModActions()->fromJsonObject(actionsJsonObject);
         }
+        else if (channelActionsKey == "PSK31ModActions")
+        {
+            channelActions->setPsk31ModActions(new SWGSDRangel::SWGPSK31ModActions());
+            channelActions->getPsk31ModActions()->fromJsonObject(actionsJsonObject);
+        }
+        else if (channelActionsKey == "RTTYModActions")
+        {
+            channelActions->setRttyModActions(new SWGSDRangel::SWGRTTYModActions());
+            channelActions->getRttyModActions()->fromJsonObject(actionsJsonObject);
+        }
         else if (channelActionsKey == "SigMFFileSinkActions")
         {
             channelActions->setSigMfFileSinkActions(new SWGSDRangel::SWGSigMFFileSinkActions());
@@ -4849,6 +4869,11 @@ bool WebAPIRequestMapper::getDeviceSettings(
         {
             deviceSettings->setAirspyHfSettings(new SWGSDRangel::SWGAirspyHFSettings());
             deviceSettings->getAirspyHfSettings()->fromJsonObject(settingsJsonObject);
+        }
+        else if (deviceSettingsKey == "androidSDRDriverInputSettings")
+        {
+            deviceSettings->setAndroidSdrDriverInputSettings(new SWGSDRangel::SWGAndroidSDRDriverInputSettings());
+            deviceSettings->getAndroidSdrDriverInputSettings()->fromJsonObject(settingsJsonObject);
         }
         else if (deviceSettingsKey == "audioCATSISOSettings")
         {
@@ -5347,6 +5372,7 @@ void WebAPIRequestMapper::resetDeviceSettings(SWGSDRangel::SWGDeviceSettings& de
     deviceSettings.setDeviceHwType(nullptr);
     deviceSettings.setAirspySettings(nullptr);
     deviceSettings.setAirspyHfSettings(nullptr);
+    deviceSettings.setAndroidSdrDriverInputSettings(nullptr);
     deviceSettings.setAudioInputSettings(nullptr);
     deviceSettings.setBladeRf1InputSettings(nullptr);
     deviceSettings.setBladeRf1OutputSettings(nullptr);
@@ -5378,6 +5404,7 @@ void WebAPIRequestMapper::resetDeviceReport(SWGSDRangel::SWGDeviceReport& device
     deviceReport.setDeviceHwType(nullptr);
     deviceReport.setAirspyHfReport(nullptr);
     deviceReport.setAirspyReport(nullptr);
+    deviceReport.setAndroidSdrDriverInputReport(nullptr);
     deviceReport.setFileInputReport(nullptr);
     deviceReport.setLimeSdrInputReport(nullptr);
     deviceReport.setLimeSdrOutputReport(nullptr);
@@ -5425,6 +5452,7 @@ void WebAPIRequestMapper::resetChannelSettings(SWGSDRangel::SWGChannelSettings& 
     channelSettings.setPacketDemodSettings(nullptr);
     channelSettings.setPacketModSettings(nullptr);
     channelSettings.setPagerDemodSettings(nullptr);
+    channelSettings.setPsk31ModSettings(nullptr);
     channelSettings.setRadioAstronomySettings(nullptr);
     channelSettings.setRadioClockSettings(nullptr);
     channelSettings.setRadiosondeDemodSettings(nullptr);
@@ -5432,6 +5460,7 @@ void WebAPIRequestMapper::resetChannelSettings(SWGSDRangel::SWGChannelSettings& 
     channelSettings.setRemoteSourceSettings(nullptr);
     channelSettings.setRemoteTcpSinkSettings(nullptr);
     channelSettings.setRttyDemodSettings(nullptr);
+    channelSettings.setRttyModSettings(nullptr);
     channelSettings.setSsbDemodSettings(nullptr);
     channelSettings.setSsbModSettings(nullptr);
     channelSettings.setUdpSourceSettings(nullptr);
@@ -5463,11 +5492,13 @@ void WebAPIRequestMapper::resetChannelReport(SWGSDRangel::SWGChannelReport& chan
     channelReport.setNoiseFigureReport(nullptr);
     channelReport.setIeee802154ModReport(nullptr);
     channelReport.setPacketModReport(nullptr);
+    channelReport.setPsk31ModReport(nullptr);
     channelReport.setRadioAstronomyReport(nullptr);
     channelReport.setRadioClockReport(nullptr);
     channelReport.setRadiosondeDemodReport(nullptr);
     channelReport.setRemoteSourceReport(nullptr);
     channelReport.setRttyDemodReport(nullptr);
+    channelReport.setRttyModReport(nullptr);
     channelReport.setSsbDemodReport(nullptr);
     channelReport.setSsbModReport(nullptr);
     channelReport.setUdpSourceReport(nullptr);
@@ -5486,8 +5517,10 @@ void WebAPIRequestMapper::resetChannelActions(SWGSDRangel::SWGChannelActions& ch
     channelActions.setChannelType(nullptr);
     channelActions.setFileSourceActions(nullptr);
     channelActions.setIeee802154ModActions(nullptr);
-    channelActions.setRadioAstronomyActions(nullptr);
     channelActions.setPacketModActions(nullptr);
+    channelActions.setPsk31ModActions(nullptr);
+    channelActions.setRadioAstronomyActions(nullptr);
+    channelActions.setRttyModActions(nullptr);
 }
 
 void WebAPIRequestMapper::resetAudioInputDevice(SWGSDRangel::SWGAudioInputDevice& audioInputDevice)

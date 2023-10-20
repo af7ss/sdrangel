@@ -95,6 +95,8 @@ bool SSBDemodGUI::handleMessage(const Message& message)
         const DSPSignalNotification& notif = (const DSPSignalNotification&) message;
         m_deviceCenterFrequency = notif.getCenterFrequency();
         m_basebandSampleRate = notif.getSampleRate();
+        qDebug("SSBDemodGUI::handleMessage: DSPSignalNotification: centerFrequency: %lld sampleRate: %d",
+             m_deviceCenterFrequency, m_basebandSampleRate);
         ui->deltaFrequency->setValueRange(false, 7, -m_basebandSampleRate/2, m_basebandSampleRate/2);
         ui->deltaFrequencyLabel->setToolTip(tr("Range %1 %L2 Hz").arg(QChar(0xB1)).arg(m_basebandSampleRate/2));
         updateAbsoluteCenterFrequency();
@@ -499,6 +501,7 @@ void SSBDemodGUI::applyBandwidths(unsigned int spanLog2, bool force)
         ui->glSpectrum->setSampleRate(2*m_spectrumRate);
         spectrumSettings.m_ssb = false;
         ui->glSpectrum->setLsbDisplay(false);
+        ui->glSpectrum->setSsbSpectrum(false);
     }
     else
     {
@@ -509,10 +512,11 @@ void SSBDemodGUI::applyBandwidths(unsigned int spanLog2, bool force)
         ui->scalePlus->setText("+");
         ui->lsbLabel->setText("LSB");
         ui->usbLabel->setText("USB");
-        ui->glSpectrum->setCenterFrequency(m_spectrumRate/2);
-        ui->glSpectrum->setSampleRate(m_spectrumRate);
+        ui->glSpectrum->setCenterFrequency(0);
+        ui->glSpectrum->setSampleRate(2*m_spectrumRate);
         spectrumSettings.m_ssb = true;
         ui->glSpectrum->setLsbDisplay(bw < 0);
+        ui->glSpectrum->setSsbSpectrum(true);
     }
 
     SpectrumVis::MsgConfigureSpectrumVis *msg = SpectrumVis::MsgConfigureSpectrumVis::create(spectrumSettings, false);

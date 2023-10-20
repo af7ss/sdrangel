@@ -76,6 +76,7 @@ private:
     double m_inputAzOffset;
     double m_inputElOffset;
     bool m_inputUpdate;
+    static const int m_extraSensitivity = 4.0f; // Otherwise 100% isn't quite fast enough
 
     explicit GS232ControllerGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     virtual ~GS232ControllerGUI();
@@ -110,8 +111,8 @@ private slots:
     void on_coord1_valueChanged(double value);
     void on_coord2_valueChanged(double value);
     void on_sources_currentTextChanged(const QString& text);
-    void on_azimuthOffset_valueChanged(int value);
-    void on_elevationOffset_valueChanged(int value);
+    void on_azimuthOffset_valueChanged(double value);
+    void on_elevationOffset_valueChanged(double value);
     void on_azimuthMin_valueChanged(int value);
     void on_azimuthMax_valueChanged(int value);
     void on_elevationMin_valueChanged(int value);
@@ -126,10 +127,14 @@ private slots:
     void on_dfmShowStatus_clicked();
     void updateStatus();
     void on_inputController_currentIndexChanged(int index);
-    void on_inputSensitivty_valueChanged(int value);
     void on_inputConfigure_clicked();
+    void on_highSensitivity_clicked(bool checked);
+    void on_enableTargetControl_clicked(bool checked);
+    void on_enableOffsetControl_clicked(bool checked);
     void updateInputControllerList();
     void checkInputController();
+    void buttonChanged(int button, bool released);
+    void inputConfigurationComplete();
 };
 
 #endif // INCLUDE_FEATURE_GS232CONTROLLERGUI_H_

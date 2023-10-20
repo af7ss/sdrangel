@@ -21,16 +21,18 @@
 #include "ui_gamepadconfigurationdialog.h"
 
 class QGamepad;
+struct InputControllerSettings;
 
 class GamepadConfigurationDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit GamepadConfigurationDialog(QGamepad *gamepad, QWidget* parent = 0);
+    explicit GamepadConfigurationDialog(QGamepad *gamepad, InputControllerSettings *settings, bool supportsConfiguraiton, QWidget* parent = 0);
     ~GamepadConfigurationDialog();
 
 private slots:
     void accept();
+    void on_configReset_clicked();
     void on_config0_clicked();
     void on_config1_clicked();
     void on_config2_clicked();
@@ -39,10 +41,17 @@ private slots:
     void axisRightYChanged(double value);
     void axisLeftXChanged(double value);
     void axisLeftYChanged(double value);
+    void on_lowSensitivity_logValueChanged(double value);
+    void on_highSensitivity_logValueChanged(double value);
+    void on_deadzone0_valueChanged(int value);
+    void on_deadzone1_valueChanged(int value);
+    void on_deadzone2_valueChanged(int value);
+    void on_deadzone3_valueChanged(int value);
 
 private:
     Ui::GamepadConfigurationDialog* ui;
     QGamepad *m_gamepad;
+    InputControllerSettings *m_settings;
 };
 
 #endif // INCLUDE_GAMEPADCONFIGURATIONDIALOG_H
